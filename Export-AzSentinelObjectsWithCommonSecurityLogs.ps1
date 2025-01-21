@@ -32,10 +32,13 @@ param (
     [Parameter(Mandatory = $true)]
     [string]$ResourceGroupName,
 
-    [string]$FileName = "ruleswithCommonSecurityLog.csv"
+    [string]$FileName = "ActiveSentinelRules.csv"
+
+    [Parameter(Mandatory = $true)]
+    [string]$Table,
 
 )
-Function Export-AzSentinelObjectsWithCommonSecurityLogs ($workspaceName, $resourceGroupName, $fileName) {
+Function Export-AzSentinelObjects ($workspaceName, $resourceGroupName, $fileName) {
 
     $outputObject = New-Object system.Data.DataTable
     [void]$outputObject.Columns.Add('Name', [string]::empty.GetType() )
@@ -61,7 +64,7 @@ Function Export-AzSentinelObjectsWithCommonSecurityLogs ($workspaceName, $resour
     $url = "https://management.azure.com/subscriptions/$($subscriptionId)/resourceGroups/$($resourceGroupName)/providers/Microsoft.OperationalInsights/workspaces/$($workspaceName)/providers/Microsoft.SecurityInsights/alertrules?api-version=2022-12-01-preview"
     $results = (Invoke-RestMethod -Method "Get" -Uri $url -Headers $authHeader ).value
 
-    foreach ($singleRule in ($results.properties | Where-Object -Property "Query" -Like "*CommonSecurityLog*")) {
+    foreach ($singleRule in ($results.properties | Where-Object -Property "Query" -Like "*$Table*")) {
         $newRow = $outputObject.NewRow()
         $newRow.Name = $singleRule.displayName
         $newRow.Category =""
@@ -80,7 +83,7 @@ Function Export-AzSentinelObjectsWithCommonSecurityLogs ($workspaceName, $resour
      $url = "https://management.azure.com/subscriptions/$($subscriptionId)/resourceGroups/$($ResourceGroupName)/providers/Microsoft.OperationalInsights/workspaces/$($workspaceName)/savedSearches/?api-version=2017-03-03-preview"
      $results = (Invoke-RestMethod -Method "Get" -Uri $url -Headers $authHeader ).value
 
-     foreach ($singleQuery in ($results.properties | Where-Object -Property "Query" -Like "*CommonSecurityLog*")) {
+     foreach ($singleQuery in ($results.properties | Where-Object -Property "Query" -Like "*$Table*")) {
         $newRow = $outputObject.NewRow()
         $newRow.Name = $singleQuery.displayName
         $newRow.Category = $singleQuery.Category
@@ -95,4 +98,4 @@ Function Export-AzSentinelObjectsWithCommonSecurityLogs ($workspaceName, $resour
 if (! $Filename.EndsWith(".csv")) {
     $FileName += ".csv"
 }
-Export-AzSentinelObjectsWithCommonSecurityLogs $WorkSpaceName $ResourceGroupName $FileName 
+Export-AzSentinelObjects $WorkSpaceName $ResourceGroupName $FileName 
